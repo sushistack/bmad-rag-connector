@@ -1,0 +1,71 @@
+# RAG Connector — standalone single-skill BMad module
+code: rag
+name: RAG Connector
+description: A thin, configurable connector that sends queries to an external RAG service and returns ranked passages — endpoint, auth, and response schema are injected via config, never hardcoded.
+module_version: 1.0.0
+default_selected: false
+module_greeting: |
+  RAG Connector is ready. Point `rag.endpoint_url` at your RAG service (and set
+  `rag.credential` if it needs auth), then run /rag-query to pull ranked passages
+  into any session. To switch knowledge bases later, edit config alone — no code.
+
+# --- Configuration variables (written under the `rag` section of config.yaml;
+#     `credential` is the only secret and goes to config.user.yaml) ---
+
+endpoint_url:
+  prompt: RAG service endpoint URL
+  default: ""
+  required: true
+  example: https://rag.example.com/search
+
+method:
+  prompt: HTTP method for the request
+  default: POST
+  single-select:
+    - value: POST
+      label: POST (JSON body)
+    - value: GET
+      label: GET (query string)
+
+auth_type:
+  prompt: How the endpoint authenticates
+  default: bearer
+  single-select:
+    - value: none
+      label: None — no auth header
+    - value: api_key
+      label: API key — raw credential in the named header
+    - value: bearer
+      label: 'Bearer token — Authorization: Bearer <credential>'
+    - value: custom_header
+      label: Custom header — raw credential in the named header
+
+auth_header_name:
+  prompt: Header name to use when auth_type is api_key or custom_header
+  default: Authorization
+
+query_field:
+  prompt: JSON body field that carries the query text
+  default: query
+
+top_k:
+  prompt: Default number of results to request
+  default: 5
+
+results_path:
+  prompt: Dotted JSON path to the results array in the response
+  default: results
+
+# Advanced — TOML *tables*, not prompted in setup (rag_query.py has correct dict
+# defaults). Edit directly in _bmad/custom/config.toml when a service needs them:
+#   [rag.extra_body]              # static fields merged into the request body
+#   index = "docs"
+#   [rag.result_fields]           # output field -> response field (dotted paths ok)
+#   text = "text"
+#   source = "meta.url"
+#   score = "score"
+
+credential:
+  prompt: API key or bearer token (secret — stored in config.user.yaml, not committed)
+  default: ""
+  user_setting: true

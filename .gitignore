@@ -1,0 +1,13 @@
+
+# bmad
+_bmad
+_bmad-output
+
+# agents
+.agents
+.claude
+
+# build / scratch artifacts (not part of the shipped plugin)
+**/__pycache__/
+**/.analysis/
+**/.memlog.md

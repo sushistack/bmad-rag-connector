@@ -1,0 +1,28 @@
+{
+  "name": "bmad-rag-connector",
+  "owner": {
+    "name": "sushistack",
+    "email": "kjm81812@gmail.com"
+  },
+  "license": "MIT",
+  "homepage": "",
+  "repository": "",
+  "keywords": [
+    "bmad",
+    "rag",
+    "connector",
+    "retrieval"
+  ],
+  "plugins": [
+    {
+      "name": "rag",
+      "source": "./plugins/rag",
+      "description": "A thin, configurable connector that sends queries to an external RAG service and returns ranked passages — endpoint, auth, and response schema are injected via config, never hardcoded.",
+      "version": "1.0.0",
+      "author": {
+        "name": "sushistack",
+        "email": "kjm81812@gmail.com"
+      }
+    }
+  ]
+}

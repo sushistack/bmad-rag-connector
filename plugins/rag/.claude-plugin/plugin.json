@@ -1,0 +1,10 @@
+{
+  "name": "rag",
+  "version": "1.0.0",
+  "description": "A thin, configurable connector that sends queries to an external RAG service and returns ranked passages — endpoint, auth, and response schema are injected via config, never hardcoded.",
+  "author": {
+    "name": "sushistack",
+    "email": "kjm81812@gmail.com"
+  },
+  "skills": "./skills/"
+}

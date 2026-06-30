@@ -1,0 +1,3 @@
+module,skill,display-name,menu-code,description,action,args,phase,preceded-by,followed-by,required,output-location,outputs
+RAG Connector,rag-query,Configure RAG Connector,SU,"Register the module and set the RAG endpoint, auth, and response mapping in config",configure,[setup|configure],anytime,,rag-query:query-rag,true,_bmad/config.yaml,"config.yaml + config.user.yaml entries under the rag section"
+RAG Connector,rag-query,Query RAG,QR,Send a query to the configured RAG endpoint and return ranked passages to the session,query-rag,[query] [--top-k N],anytime,rag-query:configure,,false,session,"ranked passages (text + source + score) rendered conversationally"
