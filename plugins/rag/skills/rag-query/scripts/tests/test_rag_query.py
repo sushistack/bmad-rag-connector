@@ -54,6 +54,54 @@ def test_body_assembly():
     assert body == {"index": "docs", "q": "hello", "top_k": 3}
 
 
+def _with_env(**vars):
+    """Set env vars for the duration of a call, restoring afterward."""
+    import os
+    saved = {k: os.environ.get(k) for k in vars}
+    os.environ.update({k: v for k, v in vars.items()})
+    return saved, os
+
+
+def _restore(saved, os):
+    for k, v in saved.items():
+        if v is None:
+            os.environ.pop(k, None)
+        else:
+            os.environ[k] = v
+
+
+def test_env_config_overlay():
+    saved, os = _with_env(
+        RAG_ENDPOINT_URL="http://env", RAG_CREDENTIAL="envtok", RAG_TOP_K="9",
+        RAG_EXTRA_BODY='{"index":"e"}', RAG_RESULT_FIELDS='{"text":"t"}',
+    )
+    try:
+        cfg = rq._env_config()
+        assert cfg["endpoint_url"] == "http://env"
+        assert cfg["credential"] == "envtok"          # API key settable anywhere
+        assert cfg["top_k"] == 9                       # int-coerced
+        assert cfg["extra_body"] == {"index": "e"}     # JSON-parsed
+        assert cfg["result_fields"] == {"text": "t"}
+        # malformed values are skipped, not fatal
+        os.environ["RAG_TOP_K"] = "notint"
+        os.environ["RAG_EXTRA_BODY"] = "{bad json"
+        bad = rq._env_config()
+        assert "top_k" not in bad and "extra_body" not in bad
+    finally:
+        _restore(saved, os)
+
+
+def test_load_config_env_only_no_bmad():
+    # No _bmad resolver at this path → resolver yields {}, env vars supply everything.
+    saved, os = _with_env(RAG_ENDPOINT_URL="http://only-env", RAG_CREDENTIAL="k")
+    try:
+        cfg = rq.load_rag_config(Path("/nonexistent-proj-xyz"))
+        assert cfg["endpoint_url"] == "http://only-env"
+        assert cfg["credential"] == "k"
+    finally:
+        _restore(saved, os)
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_") and callable(fn):

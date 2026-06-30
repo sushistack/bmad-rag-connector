@@ -42,7 +42,31 @@ It prints one JSON object with a `status` field. Handle each status:
 
 ## Configuration
 
-Config lives in the project's canonical TOML, under module code `rag`. Shared values go in `{project-root}/_bmad/config.toml` (committable); the secret goes in `{project-root}/_bmad/config.user.toml` (gitignored). The script reads them through the project's resolver, so the four-layer merge and defaults apply.
+There are two ways to supply config. `rag_query.py` reads the BMad TOML resolver first, then overlays `RAG_*` environment variables (**env wins**), so the endpoint and credential are always settable — even with no BMad install.
+
+### Option A — environment variables (works anywhere, no BMad needed)
+
+The simplest path when running as a plugin in a non-BMad project:
+
+```bash
+export RAG_ENDPOINT_URL="https://rag.example.com/search"   # required
+export RAG_CREDENTIAL="sk-..."                             # API key / bearer token (secret)
+# optional overrides (sensible defaults otherwise):
+export RAG_AUTH_TYPE="bearer"        # none | api_key | bearer | custom_header
+export RAG_METHOD="POST"
+export RAG_AUTH_HEADER_NAME="Authorization"
+export RAG_QUERY_FIELD="query"
+export RAG_TOP_K="5"
+export RAG_RESULTS_PATH="results"
+export RAG_EXTRA_BODY='{"index":"docs"}'                   # JSON object
+export RAG_RESULT_FIELDS='{"text":"text","source":"meta.url","score":"score"}'  # JSON object
+```
+
+`RAG_ENDPOINT_URL` + `RAG_CREDENTIAL` are the only ones most services need. These also override BMad config for a one-off endpoint switch.
+
+### Option B — BMad TOML config
+
+In a BMad project, config lives under module code `rag`. Shared values go in `{project-root}/_bmad/config.toml` (committable); the secret goes in `{project-root}/_bmad/config.user.toml` (gitignored). The script reads them through the project's resolver, so the four-layer merge and defaults apply.
 
 ```toml
 # _bmad/config.toml  — shared, committable

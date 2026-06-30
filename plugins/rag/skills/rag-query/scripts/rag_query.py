@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import urllib.error
@@ -53,27 +54,73 @@ def emit(obj: dict, code: int) -> None:
     sys.exit(code)
 
 
-def load_rag_config(project_root: Path) -> dict:
-    """Resolve the merged `[rag]` table via the project's TOML resolver. {} if absent."""
+# RAG_* env var -> cfg key. These overlay (and win over) the BMad resolver, so the
+# endpoint and credential are always settable — even with no BMad install at all.
+_ENV_MAP = {
+    "RAG_ENDPOINT_URL": "endpoint_url",
+    "RAG_METHOD": "method",
+    "RAG_AUTH_TYPE": "auth_type",
+    "RAG_AUTH_HEADER_NAME": "auth_header_name",
+    "RAG_QUERY_FIELD": "query_field",
+    "RAG_TOP_K": "top_k",
+    "RAG_RESULTS_PATH": "results_path",
+    "RAG_CREDENTIAL": "credential",
+    "RAG_EXTRA_BODY": "extra_body",        # JSON object string
+    "RAG_RESULT_FIELDS": "result_fields",  # JSON object string
+}
+
+
+def _resolver_config(project_root: Path) -> dict:
+    """Merged `[rag]` table from the project's BMad TOML resolver. {} if unavailable.
+
+    Never exits — a missing resolver just means "no BMad config here", in which case
+    env vars (or the top-k arg) supply everything. main() decides what's required.
+    """
     resolver = project_root / "_bmad" / "scripts" / "resolve_config.py"
     if not resolver.exists():
-        emit({"status": "config_missing", "missing": ["_bmad/config.toml"],
-              "where": f"resolver not found at {resolver}"}, 2)
+        return {}
     try:
         proc = subprocess.run(
             ["uv", "run", str(resolver), "-p", str(project_root), "-k", "rag"],
             capture_output=True, text=True, timeout=60,
         )
-    except (OSError, subprocess.SubprocessError) as e:
-        emit({"status": "config_missing", "missing": ["rag.*"],
-              "where": f"could not run resolve_config.py: {e}"}, 2)
+    except (OSError, subprocess.SubprocessError):
+        return {}
     if proc.returncode != 0:
-        emit({"status": "config_missing", "missing": ["_bmad/config.toml"],
-              "where": (proc.stderr or "resolve_config.py failed").strip()}, 2)
+        return {}
     try:
         return (json.loads(proc.stdout or "{}")).get("rag", {}) or {}
     except json.JSONDecodeError:
         return {}
+
+
+def _env_config() -> dict:
+    """Read RAG_* environment variables into a cfg dict. Works with no BMad install."""
+    cfg: dict = {}
+    for env_key, cfg_key in _ENV_MAP.items():
+        raw = os.environ.get(env_key)
+        if not raw:
+            continue
+        if cfg_key == "top_k":
+            try:
+                cfg[cfg_key] = int(raw)
+            except ValueError:
+                pass  # ponytail: ignore non-int RAG_TOP_K; --top-k arg / DEFAULTS still apply
+        elif cfg_key in ("extra_body", "result_fields"):
+            try:
+                cfg[cfg_key] = json.loads(raw)
+            except json.JSONDecodeError:
+                pass  # ponytail: malformed JSON env → skip, fall back to DEFAULTS dict
+        else:
+            cfg[cfg_key] = raw
+    return cfg
+
+
+def load_rag_config(project_root: Path) -> dict:
+    """`[rag]` config: BMad resolver as base, RAG_* env vars overlaid on top (env wins)."""
+    cfg = _resolver_config(project_root)
+    cfg.update(_env_config())
+    return cfg
 
 
 def dig(obj, dotted: str):
@@ -147,8 +194,10 @@ def main() -> None:
         emit({
             "status": "config_missing",
             "missing": missing,
-            "where": ("set shared keys in _bmad/config.toml under [rag]; "
-                      "put rag.credential in _bmad/config.user.toml (gitignored)"),
+            "where": ("export env vars RAG_ENDPOINT_URL / RAG_CREDENTIAL (works anywhere, "
+                      "no BMad needed); or in a BMad project set rag.endpoint_url in "
+                      "_bmad/custom/config.toml under [rag] and rag.credential in "
+                      "_bmad/custom/config.user.toml (gitignored)"),
         }, 2)
 
     top_k = args.top_k if args.top_k is not None else cfg.get("top_k", DEFAULTS["top_k"])

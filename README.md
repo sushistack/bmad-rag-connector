@@ -27,7 +27,24 @@ After install the skill is invoked as `/rag:rag-query`.
 
 ## Configure
 
-Run the skill with `setup` (or just run a query — if config is missing it offers to configure):
+`rag_query.py` reads the BMad TOML resolver first, then overlays `RAG_*` environment variables (**env wins**). So there are two ways to configure it, and the endpoint + credential are always settable.
+
+### Option A — environment variables (no BMad install needed)
+
+The simplest path for using the plugin in any project:
+
+```bash
+export RAG_ENDPOINT_URL="https://rag.example.com/search"   # required
+export RAG_CREDENTIAL="sk-..."                             # API key / bearer token (secret)
+# optional: RAG_AUTH_TYPE, RAG_METHOD, RAG_AUTH_HEADER_NAME, RAG_QUERY_FIELD,
+#           RAG_TOP_K, RAG_RESULTS_PATH, RAG_EXTRA_BODY (JSON), RAG_RESULT_FIELDS (JSON)
+```
+
+`RAG_ENDPOINT_URL` + `RAG_CREDENTIAL` are all most services need. These also override BMad config for a one-off endpoint switch.
+
+### Option B — BMad TOML config
+
+In a BMad project, run the skill with `setup` (or just run a query — if config is missing it offers to configure):
 
 ```shell
 /rag:rag-query setup
