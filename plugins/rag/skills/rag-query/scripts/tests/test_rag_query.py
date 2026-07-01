@@ -107,6 +107,20 @@ def test_plugin_option_env():
         _restore(saved, os)
 
 
+def test_override_file_wins_over_env():
+    # /rag:set-* writes config-override.json under CLAUDE_PLUGIN_DATA; it beats env vars.
+    import tempfile
+    d = tempfile.mkdtemp()
+    (Path(d) / "config-override.json").write_text(json.dumps({"endpoint_url": "http://override"}))
+    saved, os = _with_env(CLAUDE_PLUGIN_DATA=d, RAG_ENDPOINT_URL="http://env", RAG_CREDENTIAL="k")
+    try:
+        cfg = rq.load_rag_config(Path("/nonexistent-proj-xyz"))
+        assert cfg["endpoint_url"] == "http://override"   # file layer wins
+        assert cfg["credential"] == "k"                   # env still fills unset keys
+    finally:
+        _restore(saved, os)
+
+
 def test_load_config_env_only_no_bmad():
     # No _bmad resolver at this path → resolver yields {}, env vars supply everything.
     saved, os = _with_env(RAG_ENDPOINT_URL="http://only-env", RAG_CREDENTIAL="k")

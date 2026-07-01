@@ -11,8 +11,8 @@ Use when the user wants to ground an answer in passages retrieved from their ext
 
 This skill is a self-registering standalone module (module code `rag`). Before anything else:
 
-- If the user passed `setup`, `configure`, or `install`, load `./assets/module-setup.md` and complete registration first. This always runs, even when already configured (for reconfiguration).
-- Otherwise proceed to the normal query flow. If `rag_query.py` returns `status: config_missing`, the module isn't configured yet — offer to run `./assets/module-setup.md`, then retry the query.
+- If the user passed `setup`, `configure`, or `install` in a BMad project, load `./assets/module-setup.md` and complete registration first. This always runs, even when already configured (for reconfiguration).
+- Otherwise proceed to the normal query flow. If `rag_query.py` returns `status: config_missing`, the module isn't configured — **do not query; show the setup guide** (see the `config_missing` handling below) and stop.
 
 ## Resolution rules
 - `{skill-root}` → this skill's installed directory; `scripts/rag_query.py` resolves from it.
@@ -32,7 +32,12 @@ uv run {skill-root}/scripts/rag_query.py \
 It prints one JSON object with a `status` field. Handle each status:
 
 - **`ok`** — render `results` for the user: each passage's `text` with its `source` (and `score` if present), as a short readable list. Lead with the `count` field. Do not dump the raw JSON.
-- **`config_missing`** — the endpoint or credential isn't set. Tell the user exactly what `missing` lists and where `where` says to put it (see Configuration), then stop. This is the expected first-run state.
+- **`config_missing`** — the endpoint and/or credential isn't set. **Do not attempt the query.** State which of `missing` is absent (endpoint / credential), then show the user how to set it, leading with the slash commands:
+  - `/rag:set-endpoint <url>` — set the RAG endpoint URL
+  - `/rag:set-token <token>` — set the API key / bearer token
+  - Alternatives: export `RAG_ENDPOINT_URL` / `RAG_CREDENTIAL`, the plugin config prompt, or (BMad projects) the `[rag]` TOML keys.
+
+  Then stop and let the user configure. This is the expected first-run state.
 - **`request_error`** / **`parse_error`** — surface `error` (and `body`/`raw` if present) plainly. A `parse_error` almost always means `rag.results_path` or `rag.result_fields` don't match the service's response shape — point the user at those keys.
 
 ## Activation modes
@@ -42,11 +47,20 @@ It prints one JSON object with a `status` field. Handle each status:
 
 ## Configuration
 
-`rag_query.py` reads the BMad TOML resolver first, then overlays env vars (**env wins**), so the endpoint and credential are always settable — even with no BMad install. Env vars come from two sources, checked per key: a manually exported `RAG_*` (wins), else `CLAUDE_PLUGIN_OPTION_RAG_*` (set by the plugin config prompt).
+Config is layered, lowest to highest priority: **BMad TOML → env vars → slash-command override file**. The endpoint and credential are always settable, even with no BMad install. (`--top-k` arg still overrides `top_k` for a single call.)
 
 ### Option A — plugin config prompt (GUI, easiest when installed as a plugin)
 
 When this is installed as a Claude Code plugin, enabling it prompts the user for **RAG endpoint URL**, **RAG credential** (masked), and **auth type** (declared in `plugin.json` `userConfig`). Claude Code exports those to every subprocess as `CLAUDE_PLUGIN_OPTION_RAG_ENDPOINT_URL` / `_RAG_CREDENTIAL` / `_RAG_AUTH_TYPE`, and `rag_query.py` reads them automatically. No shell export, no file editing.
+
+### Slash commands (set config from chat, no GUI needed)
+
+Persist config without editing files or the shell — useful when the plugin config prompt isn't available:
+
+- `/rag:set-endpoint <url>` — set (or, with no argument, clear) the endpoint URL
+- `/rag:set-token <token>` — set (or clear) the credential ⚠️ *the token appears in the chat transcript; prefer the GUI prompt or `RAG_CREDENTIAL` env for secrets when you can*
+
+These write to `${CLAUDE_PLUGIN_DATA}/config-override.json` (`chmod 600`, outside the repo) — the **highest-priority** config layer, so they win over env and TOML.
 
 ### Option B — environment variables (works anywhere, incl. non-plugin use)
 

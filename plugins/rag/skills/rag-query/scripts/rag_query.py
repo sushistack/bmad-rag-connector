@@ -120,10 +120,31 @@ def _env_config() -> dict:
     return cfg
 
 
+def _override_path() -> Path:
+    """Where the /rag:set-* slash commands persist config."""
+    base = os.environ.get("CLAUDE_PLUGIN_DATA") or os.path.expanduser("~/.config/rag-query")
+    return Path(base) / "config-override.json"
+
+
+def _override_file_config() -> dict:
+    """Config set by the /rag:set-endpoint and /rag:set-token slash commands.
+    Highest-priority layer — the slash command is the most explicit user intent."""
+    path = _override_path()
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
 def load_rag_config(project_root: Path) -> dict:
-    """`[rag]` config: BMad resolver as base, RAG_* env vars overlaid on top (env wins)."""
+    """`[rag]` config, lowest to highest priority:
+    BMad resolver -> env vars (CLAUDE_PLUGIN_OPTION_* then RAG_*) -> slash-command override file."""
     cfg = _resolver_config(project_root)
     cfg.update(_env_config())
+    cfg.update(_override_file_config())
     return cfg
 
 
@@ -198,10 +219,12 @@ def main() -> None:
         emit({
             "status": "config_missing",
             "missing": missing,
-            "where": ("export env vars RAG_ENDPOINT_URL / RAG_CREDENTIAL (works anywhere, "
-                      "no BMad needed); or in a BMad project set rag.endpoint_url in "
-                      "_bmad/custom/config.toml under [rag] and rag.credential in "
-                      "_bmad/custom/config.user.toml (gitignored)"),
+            "where": ("Set config any of these ways: "
+                      "(1) slash commands — /rag:set-endpoint <url> and /rag:set-token <token>; "
+                      "(2) env vars — export RAG_ENDPOINT_URL and RAG_CREDENTIAL; "
+                      "(3) plugin config prompt when enabling the plugin; "
+                      "(4) BMad project — [rag].endpoint_url in _bmad/custom/config.toml and "
+                      "rag.credential in _bmad/custom/config.user.toml"),
         }, 2)
 
     top_k = args.top_k if args.top_k is not None else cfg.get("top_k", DEFAULTS["top_k"])

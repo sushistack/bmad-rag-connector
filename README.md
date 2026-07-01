@@ -33,6 +33,13 @@ After install the skill is invoked as `/rag:rag-query`.
 
 When installed as a Claude Code plugin, enabling it pops up a form asking for **RAG endpoint URL**, **RAG credential** (masked), and **auth type** — declared via `userConfig` in `plugin.json`. Claude Code exports them to subprocesses as `CLAUDE_PLUGIN_OPTION_RAG_*`, which the script reads automatically. Nothing to edit by hand.
 
+### Slash commands (set from chat, no GUI needed)
+
+- `/rag:set-endpoint <url>` — set (or clear) the endpoint URL
+- `/rag:set-token <token>` — set (or clear) the credential ⚠️ *the token is written to the chat transcript; prefer the config prompt or `RAG_CREDENTIAL` env for secrets*
+
+These persist to `${CLAUDE_PLUGIN_DATA}/config-override.json` (`chmod 600`) and are the highest-priority config layer. If you run a query before configuring, the skill stops and shows these instructions instead.
+
 ### Option B — environment variables (no BMad install needed)
 
 Set them yourself (also overrides the plugin prompt for a one-off switch):
