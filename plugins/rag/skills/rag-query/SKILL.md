@@ -1,6 +1,6 @@
 ---
 name: rag-query
-description: Query a configured external RAG endpoint for ranked passages. Use when the user says "/rag-query", "search the RAG", "query the knowledge base", "pull RAG context", or asks to ground the session in retrieved passages.
+description: Query a configured external RAG endpoint for ranked passages. Use when the user says "/rag:rag-query", "search the RAG", "query the knowledge base", "pull RAG context", or asks to ground the session in retrieved passages.
 ---
 
 # rag-query
@@ -42,7 +42,7 @@ It prints one JSON object with a `status` field. Handle each status:
 
 ## Activation modes
 
-- **Interactive** — the user runs `/rag-query` or asks in natural language. If they didn't give a query string, ask for one. If they named a result count, pass it as `--top-k`.
+- **Interactive** — the user runs `/rag:rag-query` or asks in natural language. If they didn't give a query string, ask for one. If they named a result count, pass it as `--top-k`.
 - **Headless** — called with a `query` (and optional `top_k`). Run the script with those args and return its JSON unchanged; do not add conversational rendering.
 
 ## Configuration
