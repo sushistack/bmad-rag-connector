@@ -6,7 +6,7 @@ module_version: 1.0.0
 default_selected: false
 module_greeting: |
   RAG Connector is ready. Point `rag.endpoint_url` at your RAG service (and set
-  `rag.credential` if it needs auth), then run /rag-query to pull ranked passages
+  `rag.credential` if it needs auth), then run /rag:query to pull ranked passages
   into any session. To switch knowledge bases later, edit config alone — no code.
 
 # --- Configuration variables (written under the `rag` section of config.yaml;

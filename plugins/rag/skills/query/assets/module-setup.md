@@ -2,7 +2,7 @@
 
 Standalone self-registration for the **RAG Connector** module (code `rag`). Loaded when:
 - The user passes `setup`, `configure`, or `install` as an argument, or
-- `rag-query` runs normally but `rag_query.py` reports `config_missing` (no `rag.endpoint_url` / `rag.credential`).
+- `query` runs normally but `rag_query.py` reports `config_missing` (no `rag.endpoint_url` / `rag.credential`).
 
 Module identity (name, code, version) and the config variables come from `./assets/module.yaml` (sibling to this file).
 
@@ -69,4 +69,4 @@ From the script JSON, show what was written (config.toml `[rag]` keys, config.us
 
 ## Return to Skill
 
-Setup is complete. Resume `rag-query`'s normal flow — `rag_query.py` will now resolve the `[rag]` config and run the query the user originally asked for.
+Setup is complete. Resume `query`'s normal flow — `rag_query.py` will now resolve the `[rag]` config and run the query the user originally asked for.

@@ -6,7 +6,7 @@ The endpoint URL, auth, request shape, and response parsing are all injected thr
 
 ## What you get
 
-- One skill, `rag-query`: query in → ranked passages out (text + source + score), rendered conversationally.
+- One skill, `query`: query in → ranked passages out (text + source + score), rendered conversationally.
 - Config-driven adapter: swap services by editing `[rag]` config keys.
 - Secrets isolation: the credential lives only in a gitignored config file, never in committed config.
 
@@ -23,7 +23,7 @@ The endpoint URL, auth, request shape, and response parsing are all injected thr
 /plugin install rag@bmad-rag-connector
 ```
 
-After install the skill is invoked as `/rag:rag-query`.
+After install the skill is invoked as `/rag:query`.
 
 ## Configure
 
@@ -58,7 +58,7 @@ export RAG_CREDENTIAL="sk-..."                             # API key / bearer to
 In a BMad project, run the skill with `setup` (or just run a query — if config is missing it offers to configure):
 
 ```shell
-/rag:rag-query setup
+/rag:query setup
 ```
 
 This writes to the project's TOML config (human-authored resolver layers):
@@ -103,8 +103,8 @@ Python changes are only needed if a service's response is too irregular for path
 ## Usage
 
 ```shell
-/rag:rag-query how do refunds work?
-/rag:rag-query "billing edge cases" --top-k 8
+/rag:query how do refunds work?
+/rag:query "billing edge cases" --top-k 8
 ```
 
 Headless: the underlying script can be called directly and returns one JSON object (`status` ∈ `ok` / `config_missing` / `request_error` / `parse_error`).

@@ -28,4 +28,4 @@ print(json.dumps({"status": "ok", "key": key, "action": "set" if val else "clear
 PY
 ```
 
-Takes effect on the next `/rag:rag-query` call. The file is written `chmod 600` (owner-only) and lives outside the repo.
+Takes effect on the next `/rag:query` call. The file is written `chmod 600` (owner-only) and lives outside the repo.

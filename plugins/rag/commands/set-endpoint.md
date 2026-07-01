@@ -1,5 +1,5 @@
 ---
-description: Set (or clear) the RAG endpoint URL. Persists across sessions; used on the next /rag:rag-query.
+description: Set (or clear) the RAG endpoint URL. Persists across sessions; used on the next /rag:query.
 argument-hint: <url>   (pass nothing to clear)
 disable-model-invocation: true
 ---
@@ -26,4 +26,4 @@ print(json.dumps({"status": "ok", "key": key, "action": "set" if val else "clear
 PY
 ```
 
-Takes effect on the next `/rag:rag-query` call.
+Takes effect on the next `/rag:query` call.
