@@ -91,6 +91,22 @@ def test_env_config_overlay():
         _restore(saved, os)
 
 
+def test_plugin_option_env():
+    # Claude Code exports plugin userConfig as CLAUDE_PLUGIN_OPTION_<KEY>.
+    saved, os = _with_env(CLAUDE_PLUGIN_OPTION_RAG_ENDPOINT_URL="http://plugin",
+                          CLAUDE_PLUGIN_OPTION_RAG_CREDENTIAL="ptok")
+    try:
+        cfg = rq._env_config()
+        assert cfg["endpoint_url"] == "http://plugin"
+        assert cfg["credential"] == "ptok"
+        # a manual RAG_* export wins over the plugin-managed value
+        os.environ["RAG_ENDPOINT_URL"] = "http://manual"
+        assert rq._env_config()["endpoint_url"] == "http://manual"
+        os.environ.pop("RAG_ENDPOINT_URL", None)
+    finally:
+        _restore(saved, os)
+
+
 def test_load_config_env_only_no_bmad():
     # No _bmad resolver at this path → resolver yields {}, env vars supply everything.
     saved, os = _with_env(RAG_ENDPOINT_URL="http://only-env", RAG_CREDENTIAL="k")

@@ -56,6 +56,9 @@ def emit(obj: dict, code: int) -> None:
 
 # RAG_* env var -> cfg key. These overlay (and win over) the BMad resolver, so the
 # endpoint and credential are always settable — even with no BMad install at all.
+# Each is also read from CLAUDE_PLUGIN_OPTION_<NAME>, which is how Claude Code exports
+# plugin userConfig values (set via the GUI prompt at plugin-enable time) to subprocesses.
+# A manually exported RAG_* shell var wins over the plugin-managed value.
 _ENV_MAP = {
     "RAG_ENDPOINT_URL": "endpoint_url",
     "RAG_METHOD": "method",
@@ -98,7 +101,8 @@ def _env_config() -> dict:
     """Read RAG_* environment variables into a cfg dict. Works with no BMad install."""
     cfg: dict = {}
     for env_key, cfg_key in _ENV_MAP.items():
-        raw = os.environ.get(env_key)
+        # manual shell export wins; else the plugin-managed CLAUDE_PLUGIN_OPTION_* value
+        raw = os.environ.get(env_key) or os.environ.get(f"CLAUDE_PLUGIN_OPTION_{env_key}")
         if not raw:
             continue
         if cfg_key == "top_k":

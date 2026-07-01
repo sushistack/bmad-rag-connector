@@ -6,5 +6,25 @@
     "name": "sushistack",
     "email": "kjm81812@gmail.com"
   },
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "userConfig": {
+    "RAG_ENDPOINT_URL": {
+      "type": "string",
+      "title": "RAG endpoint URL",
+      "description": "Base URL of the RAG service to query (e.g. https://rag.example.com/search)",
+      "required": true
+    },
+    "RAG_CREDENTIAL": {
+      "type": "string",
+      "title": "RAG credential",
+      "description": "API key or bearer token for the RAG service. Required unless auth type is 'none'.",
+      "sensitive": true
+    },
+    "RAG_AUTH_TYPE": {
+      "type": "string",
+      "title": "Auth type",
+      "description": "How the endpoint authenticates: none | api_key | bearer | custom_header",
+      "default": "bearer"
+    }
+  }
 }

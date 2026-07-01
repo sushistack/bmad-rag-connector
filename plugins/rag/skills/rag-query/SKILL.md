@@ -42,11 +42,15 @@ It prints one JSON object with a `status` field. Handle each status:
 
 ## Configuration
 
-There are two ways to supply config. `rag_query.py` reads the BMad TOML resolver first, then overlays `RAG_*` environment variables (**env wins**), so the endpoint and credential are always settable — even with no BMad install.
+`rag_query.py` reads the BMad TOML resolver first, then overlays env vars (**env wins**), so the endpoint and credential are always settable — even with no BMad install. Env vars come from two sources, checked per key: a manually exported `RAG_*` (wins), else `CLAUDE_PLUGIN_OPTION_RAG_*` (set by the plugin config prompt).
 
-### Option A — environment variables (works anywhere, no BMad needed)
+### Option A — plugin config prompt (GUI, easiest when installed as a plugin)
 
-The simplest path when running as a plugin in a non-BMad project:
+When this is installed as a Claude Code plugin, enabling it prompts the user for **RAG endpoint URL**, **RAG credential** (masked), and **auth type** (declared in `plugin.json` `userConfig`). Claude Code exports those to every subprocess as `CLAUDE_PLUGIN_OPTION_RAG_ENDPOINT_URL` / `_RAG_CREDENTIAL` / `_RAG_AUTH_TYPE`, and `rag_query.py` reads them automatically. No shell export, no file editing.
+
+### Option B — environment variables (works anywhere, incl. non-plugin use)
+
+Set them yourself; a manual `RAG_*` also overrides the plugin-prompt value for a one-off switch:
 
 ```bash
 export RAG_ENDPOINT_URL="https://rag.example.com/search"   # required
@@ -64,7 +68,7 @@ export RAG_RESULT_FIELDS='{"text":"text","source":"meta.url","score":"score"}'  
 
 `RAG_ENDPOINT_URL` + `RAG_CREDENTIAL` are the only ones most services need. These also override BMad config for a one-off endpoint switch.
 
-### Option B — BMad TOML config
+### Option C — BMad TOML config
 
 In a BMad project, config lives under module code `rag`. Shared values go in `{project-root}/_bmad/config.toml` (committable); the secret goes in `{project-root}/_bmad/config.user.toml` (gitignored). The script reads them through the project's resolver, so the four-layer merge and defaults apply.
 
