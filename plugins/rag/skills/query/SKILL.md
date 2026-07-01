@@ -31,14 +31,16 @@ uv run {skill-root}/scripts/rag_query.py \
 
 It prints one JSON object with a `status` field. Handle each status:
 
-- **`ok`** — render `results` for the user: each passage's `text` with its `source` (and `score` if present), as a short readable list. Lead with the `count` field. Do not dump the raw JSON.
-- **`config_missing`** — the endpoint and/or credential isn't set. **Do not attempt the query.** State which of `missing` is absent (endpoint / credential), then show the user how to set it, leading with the slash commands:
+- **`ok`** — two shapes, distinguished by `mode`:
+  - `mode: "passages"` — render `results`: each passage's `text` with its `source` (and `score` if present) as a short readable list; lead with `count`. Don't dump raw JSON.
+  - `mode: "answer"` — the endpoint is a generative RAG that already synthesized a reply. Render the `answer` string directly. (No passages to list.)
+- **`config_missing`** — only the endpoint is missing (a credential is optional). **Do not attempt the query.** Show the user how to set the endpoint, leading with the slash command:
   - `/rag:set-endpoint <url>` — set the RAG endpoint URL
-  - `/rag:set-token <token>` — set the API key / bearer token
-  - Alternatives: export `RAG_ENDPOINT_URL` / `RAG_CREDENTIAL`, the plugin config prompt, or (BMad projects) the `[rag]` TOML keys.
+  - `/rag:set-token <token>` — **optional**, only if the endpoint needs auth
+  - Alternatives: export `RAG_ENDPOINT_URL` (and `RAG_CREDENTIAL` if needed), the plugin config prompt, or (BMad projects) the `[rag]` TOML keys.
 
   Then stop and let the user configure. This is the expected first-run state.
-- **`request_error`** / **`parse_error`** — surface `error` (and `body`/`raw` if present) plainly. A `parse_error` almost always means `rag.results_path` or `rag.result_fields` don't match the service's response shape — point the user at those keys.
+- **`request_error`** / **`parse_error`** — surface `error` (and `body`/`raw` if present) plainly. A `parse_error` means the response matched neither a passages list nor an answer string — point the user at `rag.results_path` (retrieval APIs) or `rag.answer_field` (generative APIs).
 
 ## Activation modes
 
@@ -47,7 +49,7 @@ It prints one JSON object with a `status` field. Handle each status:
 
 ## Configuration
 
-Config is layered, lowest to highest priority: **BMad TOML → env vars → slash-command override file**. The endpoint and credential are always settable, even with no BMad install. (`--top-k` arg still overrides `top_k` for a single call.)
+Config is layered, lowest to highest priority: **BMad TOML → env vars → slash-command override file**. Only `endpoint_url` is required; a credential is **optional** (sent only when set — endpoints that need no auth just work). The response shape is auto-detected: a passages list (`results_path`) or a generated `answer` string (`answer_field`, default `answer`) for generative RAG endpoints like alpha-hrag. `top_k` is sent only when set (`--top-k` or `rag.top_k`) — some APIs reject unknown body fields.
 
 ### Option A — plugin config prompt (GUI, easiest when installed as a plugin)
 
@@ -113,7 +115,12 @@ Defaults are sensible: a typical `POST {url}` JSON RAG API that returns `{ "resu
 
 **Point it at a different RAG service** by editing config alone: change `endpoint_url` + `credential`, set `auth_type` to match, and map the response with `results_path` (where the array lives, e.g. `data.hits`) and `result_fields` (which response fields become text/source/score, dotted paths like `meta.url` allowed). Python changes are needed only if a service's response is too irregular for path-mapping — that's the one place a small per-service adapter could be added later; call it out, don't build it speculatively.
 
+## Generative RAG (answer mode)
+
+Some endpoints (e.g. NHN alpha-hrag `/api/v1/retrieve`) don't return passages — they return a synthesized `answer` string plus doc ids. This is handled automatically: if the response has no list at `results_path`, the script reads `answer_field` (default `answer`) and returns `mode: "answer"`. Such endpoints also often forbid unknown body fields, which is why `top_k` is omitted unless you set it. For alpha-hrag, **setting only the endpoint is enough** (no token, no top_k). If the answer field has another name, set `answer_field` (env `RAG_ANSWER_FIELD`).
+
 ## Gotchas
+- **Only `endpoint_url` is required.** A credential is optional — without one, no auth header is sent. `top_k` is sent only when set.
 - **Config is TOML** (`config.toml` / `config.user.toml`), not YAML.
-- **`top_k` is sent as a body field named `top_k`.** A service that names it differently (`k`, `limit`, `num_results`) should set that field via `rag.extra_body`.
-- **`bearer` always uses the `Authorization` header** (`Bearer <credential>`) and ignores `auth_header_name`; `api_key` and `custom_header` use `auth_header_name` with the raw credential.
+- **`top_k`, when set, is a body field named `top_k`.** A service that names it differently (`k`, `limit`) should set that field via `rag.extra_body` instead and leave `top_k` unset.
+- **`bearer` uses the `Authorization` header** (`Bearer <credential>`) and ignores `auth_header_name`; `api_key` / `custom_header` use `auth_header_name`. With no credential, no header is sent regardless of `auth_type`.

@@ -1,5 +1,5 @@
 ---
-description: Set (or clear) the RAG API token/key. Persists across sessions (stored chmod 600).
+description: Set (or clear) the RAG API token/key. OPTIONAL — only if your endpoint needs auth. Persists across sessions (chmod 600).
 argument-hint: <token>   (pass nothing to clear)
 disable-model-invocation: true
 ---

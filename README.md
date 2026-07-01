@@ -35,10 +35,14 @@ When installed as a Claude Code plugin, enabling it pops up a form asking for **
 
 ### Slash commands (set from chat, no GUI needed)
 
-- `/rag:set-endpoint <url>` — set (or clear) the endpoint URL
-- `/rag:set-token <token>` — set (or clear) the credential ⚠️ *the token is written to the chat transcript; prefer the config prompt or `RAG_CREDENTIAL` env for secrets*
+- `/rag:set-endpoint <url>` — set (or clear) the endpoint URL **(this is all you need for a no-auth endpoint)**
+- `/rag:set-token <token>` — **optional**, only if your endpoint needs auth ⚠️ *the token is written to the chat transcript; prefer the config prompt or `RAG_CREDENTIAL` env for secrets*
 
-These persist to `${CLAUDE_PLUGIN_DATA}/config-override.json` (`chmod 600`) and are the highest-priority config layer. If you run a query before configuring, the skill stops and shows these instructions instead.
+These persist to `${CLAUDE_PLUGIN_DATA}/config-override.json` (`chmod 600`) and are the highest-priority config layer. Only the endpoint is required to run; if it's unset, the skill stops and shows these instructions instead.
+
+### Generative RAG (answer mode)
+
+If your endpoint returns a synthesized **answer** (not a passages list) — e.g. NHN alpha-hrag `/api/v1/retrieve` — it's auto-detected: set only the endpoint and the skill returns the `answer`. No token, no `top_k` (that endpoint rejects extra body fields, so `top_k` is sent only when you set it). Override the field name with `RAG_ANSWER_FIELD` if it isn't called `answer`.
 
 ### Option B — environment variables (no BMad install needed)
 

@@ -54,6 +54,32 @@ def test_body_assembly():
     assert body == {"index": "docs", "q": "hello", "top_k": 3}
 
 
+def test_top_k_omitted_when_none():
+    # Some APIs (e.g. alpha-hrag) reject unknown body fields; top_k must be absent unless set.
+    body = json.loads(rq.build_request({"endpoint_url": "http://e"}, "hi", None).data)
+    assert body == {"query": "hi"}
+    assert "top_k" not in body
+
+
+def test_no_auth_header_without_credential():
+    # No credential -> no auth header, even with the default bearer auth_type.
+    r = rq.build_request({"endpoint_url": "http://e"}, "hi", None)
+    assert "Authorization" not in r.headers
+
+
+def test_select_output_modes():
+    m, v = rq.select_output({"results": [{"text": "a", "source": "s", "score": 1}]},
+                            {"results_path": "results", "result_fields": {"text": "text"}})
+    assert m == "passages" and v == [{"text": "a"}]
+    # answer mode: no results list, but an "answer" string (alpha-hrag shape)
+    m, v = rq.select_output({"query": "q", "answer": "the answer", "doc_ids": []}, {})
+    assert m == "answer" and v == "the answer"
+    m, v = rq.select_output({"reply": "hi"}, {"answer_field": "reply"})
+    assert m == "answer" and v == "hi"
+    m, v = rq.select_output({"weird": 1}, {})
+    assert m == "none" and v is None
+
+
 def _with_env(**vars):
     """Set env vars for the duration of a call, restoring afterward."""
     import os
